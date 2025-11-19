@@ -22,7 +22,7 @@ class TestHrExpensePayToVendor(TransactionCase):
         self.env["res.config.settings"].create(
             {"group_wa_accepted_before_inv": True, "group_enable_wa_on_exp": True}
         ).execute()
-
+        self.product_no_cost = self.env.ref("hr_expense.product_product_no_cost")
         self.expense_journal = self.env["account.journal"].create(
             {
                 "name": "Purchase Journal - Test",
@@ -43,7 +43,7 @@ class TestHrExpensePayToVendor(TransactionCase):
                 {
                     "name": "Expense Line 1",
                     "employee_id": self.ref("hr.employee_admin"),
-                    "product_id": self.ref("hr_expense.air_ticket"),
+                    "product_id": self.product_no_cost.id,
                     "unit_amount": 1,
                     "quantity": 10,
                     "sheet_id": self.expense_sheet.id,
@@ -51,7 +51,7 @@ class TestHrExpensePayToVendor(TransactionCase):
                 {
                     "name": "Expense Line 1",
                     "employee_id": self.ref("hr.employee_admin"),
-                    "product_id": self.ref("hr_expense.air_ticket"),
+                    "product_id": self.product_no_cost.id,
                     "unit_amount": 1,
                     "quantity": 20,
                     "sheet_id": self.expense_sheet.id,
@@ -72,13 +72,13 @@ class TestHrExpensePayToVendor(TransactionCase):
             self.assertEqual(expense.qty_accepted, 0)
         # Create 2 WA
         res = self.expense_sheet.with_context(create_wa=True).action_view_wa()
-        f = Form(self.env[res["res_model"]].with_context(res["context"]))
+        f = Form(self.env[res["res_model"]].with_context(**res["context"]))
         wa_ids = work_acceptance = f.save()
         self.assertEqual(work_acceptance.state, "draft")
         work_acceptance.button_cancel()
         self.assertEqual(work_acceptance.state, "cancel")
         res = self.expense_sheet.with_context(create_wa=True).action_view_wa()
-        f = Form(self.env[res["res_model"]].with_context(res["context"]))
+        f = Form(self.env[res["res_model"]].with_context(**res["context"]))
         work_acceptance = f.save()
         wa_ids += work_acceptance
         # Check smart button link to 2 WA
@@ -107,7 +107,7 @@ class TestHrExpensePayToVendor(TransactionCase):
             self.expense_sheet.action_sheet_move_create()
         # Test create wa but not accepted
         res = self.expense_sheet.with_context(create_wa=True).action_view_wa()
-        f = Form(self.env[res["res_model"]].with_context(res["context"]))
+        f = Form(self.env[res["res_model"]].with_context(**res["context"]))
         work_acceptance = f.save()
         res = self.expense_sheet.with_context().action_view_wa()
         self.assertEqual(res["res_id"], self.expense_sheet.wa_ids.id)
